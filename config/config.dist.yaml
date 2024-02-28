@@ -1,0 +1,14 @@
+bot:
+  token: '<Here is your bot token>'
+  fetch_updates: polling
+  webhook:
+    url: '<Webhook url>'
+    secret_token: '<Secret token. Optional.>'
+    max_connections: 40
+  polling:
+    timeout: 10
+
+
+boosty:
+  email: '<Here is your email>'
+  password: '<Here is your password>'

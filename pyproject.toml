@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "bruhsty"
+version = "0.1.0"
+description = "Manages your telegram channel for boosters"
+authors = ["Artem Burenin <burenin.aa@yandex.ru>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+aiogram = "^3.3.0"
+pydantic = "2.5.3"
+pydantic-settings = "^2.1.0"
+pyyaml = "^6.0.1"
+uvicorn = {extras = ["standard"], version = "^0.27.0.post1"}
+
+
+[tool.poetry.group.dev.dependencies]
+mypy = "^1.8.0"
+pytest = "^8.0.0"
+faker = "^23.1.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
