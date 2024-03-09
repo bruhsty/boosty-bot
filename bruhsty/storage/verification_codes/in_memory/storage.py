@@ -5,7 +5,7 @@ from typing import Callable, AsyncIterable
 
 from ..errors import CodeNotFoundError
 from ..models import Code, EditableFields
-from bruhsty.storage.verification_codes.specs import (
+from bruhsty.storage.specs import (
     Specification, Compare, Or,
     Not, And, Operator, Field
 )
