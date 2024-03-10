@@ -2,6 +2,7 @@ import dataclasses
 import operator
 from datetime import datetime, timedelta
 from typing import Callable, AsyncIterable
+from typing_extensions import Unpack
 
 from ..errors import CodeNotFoundError
 from ..models import Code, EditableFields
@@ -9,6 +10,7 @@ from bruhsty.storage.specs import (
     Specification, Compare, Or,
     Not, And, Operator
 )
+
 
 class CodeStorage:
     def __init__(self, code_ttl: timedelta) -> None:
@@ -31,7 +33,7 @@ class CodeStorage:
         self._storage[code.code_id] = code
         return dataclasses.replace(code)
 
-    async def update(self, code_id: int, **updates: EditableFields) -> Code:
+    async def update(self, code_id: int, **updates: Unpack[EditableFields]) -> Code:
         if code_id not in self._storage:
             raise CodeNotFoundError(code_id, f"code with id {code_id} does not exist")
 
