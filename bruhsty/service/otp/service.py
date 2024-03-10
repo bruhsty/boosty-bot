@@ -26,7 +26,7 @@ class OTPService:
         return code
 
     async def validate_otp(self, telegram_id: int, user_email: str, otp: str) -> None:
-        query = (Code.Fields.telegram_id == telegram_id) & (Code.Fields.email == user_email) & (Code.Fields.code == otp)
+        query = (Code.telegram_id == telegram_id) & (Code.email == user_email) & (Code.code == otp)
         codes = [code async for code in self.codes_store.find(query)]
         if not codes:
             raise CodeInvalidError(otp, user_email, telegram_id)
