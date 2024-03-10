@@ -7,19 +7,8 @@ from ..errors import CodeNotFoundError
 from ..models import Code, EditableFields
 from bruhsty.storage.specs import (
     Specification, Compare, Or,
-    Not, And, Operator, Field
+    Not, And, Operator
 )
-
-
-class CodeField:
-    CODE_ID = Field("code_id")
-    TELEGRAM_ID = Field("telegram_id")
-    EMAIL = Field("email")
-    CODE = Field("code")
-    CREATED_AT = Field("created_at")
-    USED_AT = Field("used_at")
-    VALID_UNTIL = Field("valid_until")
-
 
 class CodeStorage:
     def __init__(self, code_ttl: timedelta) -> None:

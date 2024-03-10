@@ -12,5 +12,5 @@ class CodeStorage(Protocol):
     async def update(self, code_id: int, **updates: EditableFields) -> Code:
         ...
 
-    async def find(self, spec: Specification) -> AsyncIterable[Code]:
+    def find(self, spec: Specification) -> AsyncIterable[Code]:
         ...

@@ -49,8 +49,8 @@ FieldType = TypeVar('FieldType')
 
 
 @dataclass
-class Field(Generic[T, FieldType]):
-    field: FieldType
+class Field:
+    field: str
 
     def __le__(self, value: T) -> Compare:
         return Compare(Operator.LE, self.field, value)
