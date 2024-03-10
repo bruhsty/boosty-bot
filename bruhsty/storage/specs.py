@@ -48,9 +48,24 @@ class Not(Specification):
 FieldType = TypeVar('FieldType')
 
 
-@dataclass
-class Field:
-    field: str
+class Field[T]:
+
+    def __init__(self, field_name: str | None = None) -> None:
+        self.field = field_name
+        self.value: T | None = None
+
+    def __get__(self, obj: object | None, obj_type=None) -> T:
+        if obj is None:
+            return self
+        else:
+            return self.value
+
+    def __set_name__(self, owner, name: str):
+        if self.field == "" or self.field is None:
+            self.field = name
+
+    def __set__(self, instance, value: T):
+        self.value = value
 
     def __le__(self, value: T) -> Compare:
         return Compare(Operator.LE, self.field, value)
@@ -67,8 +82,8 @@ class Field:
     def __eq__(self, value: T) -> Compare:
         return Compare(Operator.EQ, self.field, value)
 
-    def __neq__(self, value: T) -> Compare:
-        return Compare(Operator.LE, self.field, value)
+    def __ne__(self, value: T) -> Compare:
+        return Compare(Operator.NE, self.field, value)
 
 
 @dataclass
