@@ -27,7 +27,6 @@ class OTPService:
 
     async def validate_otp(self, telegram_id: int, user_email: str, otp: str) -> None:
         query = (Code.Fields.telegram_id == telegram_id) & (Code.Fields.email == user_email) & (Code.Fields.code == otp)
-        correct_code = None
         codes = [code async for code in self.codes_store.find(query)]
         if not codes:
             raise CodeInvalidError(otp, user_email, telegram_id)
@@ -39,4 +38,4 @@ class OTPService:
         if first_code.valid_until < datetime.now():
             raise CodeExpiredError(otp, user_email, telegram_id, first_code.valid_until)
 
-        await self.codes_store.update(first_code.code_id, used_at=datetime.now())  # TODO: fix type annotations
+        await self.codes_store.update(first_code.code_id, used_at=datetime.now())
