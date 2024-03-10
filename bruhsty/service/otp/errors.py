@@ -26,9 +26,9 @@ class CodeInvalidError(OTPServiceError):
 
 class CodeExpiredError(OTPServiceError):
 
-    def __init__(self, code: str, email: str, telegram_id: int, used_at: datetime) -> None:
+    def __init__(self, code: str, email: str, telegram_id: int, valid_until: datetime) -> None:
         super().__init__(self, f"Code {code} has expired")
         self.code = code
         self.email = email
         self.telegram_id = telegram_id
-        self.used_at = used_at
+        self.valid_until = valid_until

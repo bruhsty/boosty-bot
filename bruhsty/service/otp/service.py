@@ -1,6 +1,9 @@
 import struct
+from datetime import datetime
 from typing import Callable
 from bruhsty.service import proto
+from bruhsty.service.otp import CodeInvalidError, CodeAlreadyUsedError
+from bruhsty.service.otp.errors import CodeExpiredError
 from bruhsty.storage.verification_codes.models import Code
 
 
@@ -23,7 +26,17 @@ class OTPService:
         return code
 
     async def validate_otp(self, telegram_id: int, user_email: str, otp: str) -> None:
-        # TODO: check if code is valid (valid value, wasn't used, is still valid),
-        #  if not valid raise appropriate error
-        #  mark code as used (set used_at field)
-        ...
+        query = (Code.Fields.telegram_id == telegram_id) & (Code.Fields.email == user_email) & (Code.Fields.code == otp)
+        correct_code = None
+        codes = [code async for code in self.codes_store.find(query)]
+        if not codes:
+            raise CodeInvalidError(otp, user_email, telegram_id)
+
+        first_code = codes[0]
+        if first_code.used_at is not None:
+            raise CodeAlreadyUsedError(otp, user_email, telegram_id, first_code.used_at)
+
+        if first_code.valid_until < datetime.now():
+            raise CodeExpiredError(otp, user_email, telegram_id, first_code.valid_until)
+
+        await self.codes_store.update(first_code.code_id, used_at=datetime.now())  # TODO: fix type annotations
