@@ -1,5 +1,5 @@
 from typing import Callable
-from service import proto
+from bruhsty.service import proto
 
 
 class OTPService:
