@@ -1,5 +1,7 @@
+import struct
 from typing import Callable
 from bruhsty.service import proto
+from bruhsty.storage.verification_codes.models import Code
 
 
 class OTPService:
@@ -11,11 +13,14 @@ class OTPService:
         self.random = random
         self.codes_store = codes_store
 
-    async def generate_otp(self, telegram_id: int, user_email: str) -> str:
-        # TODO: generate one time password from given random source (self.random).
-        #  save in provided codes store (self.codes_store)
-        #  return generated code
-        ...
+    async def generate_otp(self, telegram_id: int, user_email: str) -> Code:
+        otp_bytes = self.random(4)  # создал 6 рандомных байтов
+        otp_tuple = struct.unpack("I", otp_bytes)
+        otp_str = "".join(otp_tuple)
+        short_otp_str = otp_str[:6]
+        otp = short_otp_str.rjust(6, '0')
+        code = await self.codes_store.add(telegram_id, user_email, otp)
+        return code
 
     async def validate_otp(self, telegram_id: int, user_email: str, otp: str) -> None:
         # TODO: check if code is valid (valid value, wasn't used, is still valid),
