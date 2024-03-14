@@ -3,7 +3,8 @@ from __future__ import annotations
 import abc
 import enum
 from dataclasses import dataclass
-from typing import Generic, TypeVar
+from typing import Generic, TypeVar, overload, Any
+from types import EllipsisType
 
 __all__ = ["Operator", "Specification", "And", "Or", "Not", "Compare", "Field"]
 
@@ -24,40 +25,52 @@ class Specification(abc.ABC):
         return Not(self)
 
     def __or__(self, other: Specification) -> Specification:
-        return Or([self, other])
+        return Or(self, other)
 
     def __and__(self, other: Specification) -> Specification:
-        return And([self, other])
+        return And(self, other)
 
 
-@dataclass
 class And(Specification):
-    specs: list[Specification]
+
+    def __init__(self, *specs: Specification) -> None:
+        self.specs = specs
 
 
-@dataclass
 class Or(Specification):
-    specs: list[Specification]
+
+    def __init__(self, *specs: Specification) -> None:
+        self.specs = specs
 
 
-@dataclass
 class Not(Specification):
-    spec: Specification
+    def __init__(self, spec: Specification) -> None:
+        self.spec = spec
 
 
 FieldType = TypeVar('FieldType')
 
 
-class Field[T]:
+class Field(Generic[T]):
 
-    def __init__(self, field_name: str | None = None) -> None:
+    def __init__(self, default: T | EllipsisType = ..., field_name: str | None = None) -> None:
         self.field = field_name
-        self.value: T | None = None
+        self.value = default
 
-    def __get__(self, obj: object | None, obj_type=None) -> T:
+    @overload
+    def __get__(self, obj: None, owner: Any) -> T:
+        ...
+
+    @overload
+    def __get__(self, obj: object, owner: Any) -> Field[T]:
+        ...
+
+    def __get__(self, obj: object | None, owner: Any) -> T | Field[T]:
         if obj is None:
             return self
         else:
+            if isinstance(self.value, EllipsisType):
+                raise AttributeError(f"Field {self.field} was not set and has no default value")
             return self.value
 
     def __set_name__(self, owner, name: str):
@@ -68,26 +81,26 @@ class Field[T]:
         self.value = value
 
     def __le__(self, value: T) -> Compare:
-        return Compare(Operator.LE, self.field, value)
+        return Compare(Operator.LE, self.field or "", value)
 
     def __lt__(self, value: T) -> Compare:
-        return Compare(Operator.LT, self.field, value)
+        return Compare(Operator.LT, self.field or "", value)
 
     def __gt__(self, value: T) -> Compare:
-        return Compare(Operator.GT, self.field, value)
+        return Compare(Operator.GT, self.field or "", value)
 
     def __ge__(self, value: T) -> Compare:
-        return Compare(Operator.GE, self.field, value)
+        return Compare(Operator.GE, self.field or "", value)
 
-    def __eq__(self, value: T) -> Compare:
-        return Compare(Operator.EQ, self.field, value)
+    def __eq__(self, value: T) -> Compare:  # type: ignore
+        return Compare(Operator.EQ, self.field or "", value)
 
-    def __ne__(self, value: T) -> Compare:
-        return Compare(Operator.NE, self.field, value)
+    def __ne__(self, value: T) -> Compare:  # type: ignore
+        return Compare(Operator.NE, self.field or "", value)
 
 
 @dataclass
-class Compare(Generic[T, FieldType], Specification):
+class Compare(Generic[T], Specification):
     op: Operator
-    field: FieldType
+    field: str
     value: T
