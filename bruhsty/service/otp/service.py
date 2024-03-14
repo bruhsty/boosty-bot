@@ -4,7 +4,7 @@ from typing import Callable
 from bruhsty.service import proto
 from bruhsty.service.otp import CodeInvalidError, CodeAlreadyUsedError
 from bruhsty.service.otp.errors import CodeExpiredError
-from bruhsty.storage.verification_codes.models import Code
+from bruhsty.storage.verification_codes.models import Code, CodeCreate
 
 
 class OTPService:
@@ -22,12 +22,12 @@ class OTPService:
         otp_str = "".join(otp_tuple)
         short_otp_str = otp_str[:6]
         otp = short_otp_str.rjust(6, '0')
-        code = await self.codes_store.add(telegram_id, user_email, otp)
+        code = await self.codes_store.create(CodeCreate(telegram_id, user_email, otp))
         return code
 
     async def validate_otp(self, telegram_id: int, user_email: str, otp: str) -> None:
         query = (Code.telegram_id == telegram_id) & (Code.email == user_email) & (Code.code == otp)
-        codes = [code async for code in self.codes_store.find(query)]
+        codes = self.codes_store.find_all(query)
         if not codes:
             raise CodeInvalidError(otp, user_email, telegram_id)
 

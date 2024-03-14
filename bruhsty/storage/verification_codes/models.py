@@ -1,9 +1,10 @@
+from dataclasses import dataclass
 from datetime import datetime
 from typing import TypedDict
 
-__all__ = ["Code", "EditableFields"]
-
 from bruhsty.storage.specs import Field
+
+__all__ = ["Code", "CodeEdit", "CodeCreate"]
 
 
 class Code:
@@ -34,10 +35,18 @@ class Code:
         self.used_at = used_at
 
 
-class EditableFields(TypedDict):
+class CodeEdit(TypedDict):
     telegram_id: int
     email: str
     code: str
     created_at: datetime
     used_at: datetime | None
     valid_until: datetime
+
+
+@dataclass
+class CodeCreate:
+    telegram_id: int
+    email: str
+    code: str
+    valid_until: datetime | None = None
