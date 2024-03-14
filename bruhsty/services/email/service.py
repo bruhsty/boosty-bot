@@ -38,6 +38,3 @@ class SMTPEmailService(EmailService):
                               username=self.username,
                               password=self.password,
                               start_tls=self.use_tls, )
-        
-
-

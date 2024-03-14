@@ -18,7 +18,7 @@ class VerificationCode(Base):
     code: Mapped[str] = mapped_column()
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=functions.now())
     valid_until: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    used_at: Mapped[bool | None] = mapped_column(default=None, nullable=True)
+    used_at: Mapped[datetime | None] = mapped_column(default=None, nullable=True)
 
     def to_model(self) -> Code:
         return Code(

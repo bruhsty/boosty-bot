@@ -1,4 +1,5 @@
 import contextlib
+from typing import AsyncIterator
 
 from sqlalchemy.ext.asyncio import AsyncAttrs, async_sessionmaker, AsyncSession, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
@@ -14,7 +15,7 @@ class Base(AsyncAttrs, DeclarativeBase):
 
 
 @contextlib.asynccontextmanager
-async def connect(db_dsn: str) -> async_sessionmaker[AsyncSession]:
+async def connect(db_dsn: str) -> AsyncIterator[async_sessionmaker[AsyncSession]]:
     engine = create_async_engine(db_dsn, echo=True)
     try:
         session_maker = async_sessionmaker(engine, expire_on_commit=False)
