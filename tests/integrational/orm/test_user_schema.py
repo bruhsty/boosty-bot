@@ -2,11 +2,10 @@ import datetime
 
 import pytest
 import sqlalchemy as sa
+from registration.adapters.storage.schema import BoostyProfile, SubscriptionLevel, User
+from registration.domain import models
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from bruhsty.domain import models
-from bruhsty.storage.user.postgres.schema import BoostyProfile, SubscriptionLevel, User
 
 
 async def execute_text(session: AsyncSession, query: str) -> tuple:

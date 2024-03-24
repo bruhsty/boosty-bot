@@ -1,21 +1,20 @@
 from datetime import datetime
 
 import pytest
+from common.domain import DomainEvent
 from integrational.orm.test_user_schema import execute_text
 from integrational.utils import insert_user
+from registration.domain.events import BoostyProfileAdded
+from registration.domain.models import BoostyProfile, User
+from registration.service_layer.unit_of_work import UnitOfWork
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-
-from bruhsty.domain.events import BoostyProfileAdded, Event
-from bruhsty.domain.models import BoostyProfile, User
-from bruhsty.service import SQLUnitOfWork
-from bruhsty.service.unit_of_work import UserUnitOfWork
 
 
 class FakeMessageBus:
     def __init__(self) -> None:
-        self.events = list[Event]()
+        self.events = list[DomainEvent]()
 
-    async def publish(self, *new_events: Event) -> None:
+    async def publish(self, *new_events: DomainEvent) -> None:
         self.events.extend(new_events)
 
 
@@ -46,17 +45,15 @@ def message_bus() -> FakeMessageBus:
 
 
 @pytest.fixture(scope="function")
-def uow(
-    sessionmaker: async_sessionmaker[AsyncSession], message_bus: FakeMessageBus
-) -> SQLUnitOfWork:
-    return UserUnitOfWork(
+def uow(sessionmaker: async_sessionmaker[AsyncSession], message_bus: FakeMessageBus) -> UnitOfWork:
+    return UnitOfWork(
         bus=message_bus,
         sessionmaker=sessionmaker,
     )
 
 
 @pytest.mark.asyncio
-async def test_uow_rollbacks_not_commited_by_default(uow: UserUnitOfWork, session: AsyncSession):
+async def test_uow_rollbacks_not_commited_by_default(uow: UnitOfWork, session: AsyncSession):
     async with uow:
         await insert_user(uow.session)
 
@@ -65,7 +62,7 @@ async def test_uow_rollbacks_not_commited_by_default(uow: UserUnitOfWork, sessio
 
 
 @pytest.mark.asyncio
-async def test_uow_commits_changed_data(uow: UserUnitOfWork):
+async def test_uow_commits_changed_data(uow: UnitOfWork):
     async with uow:
         user = User.new(123456)
         await uow.user_storage.add(user)
@@ -84,7 +81,7 @@ async def test_uow_commits_changed_data(uow: UserUnitOfWork):
 
 
 @pytest.mark.asyncio
-async def test_uow_collects_event_from_aggregates(uow: UserUnitOfWork, session: AsyncSession):
+async def test_uow_collects_event_from_aggregates(uow: UnitOfWork, session: AsyncSession):
     await insert_user(session)
     await session.commit()
 
@@ -96,4 +93,4 @@ async def test_uow_collects_event_from_aggregates(uow: UserUnitOfWork, session: 
         user.add_profile(profile)
         await uow.commit()
 
-    assert type(uow.bus.events[0]) is BoostyProfileAdded
+    assert type(uow.bus.events[0]) is BoostyProfileAdded  # type: ignore

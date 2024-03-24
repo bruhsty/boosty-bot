@@ -3,6 +3,7 @@ from typing import AsyncIterable
 
 import pytest
 import pytest_asyncio
+from common.orm import Base
 from sqlalchemy.ext.asyncio import (
     AsyncConnection,
     AsyncEngine,
@@ -11,8 +12,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from bruhsty import config
-from bruhsty.storage.sql.base import Base
+import config
 
 
 @contextlib.asynccontextmanager

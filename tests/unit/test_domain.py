@@ -2,8 +2,8 @@ import uuid
 from datetime import datetime
 from typing import cast
 
-from bruhsty.domain.events import BoostyProfileAdded, BoostyProfileVerified
-from bruhsty.domain.models import BoostyProfile, SubscriptionLevel, User, VerificationCode
+from registration.domain.events import BoostyProfileAdded, BoostyProfileVerified
+from registration.domain.models import BoostyProfile, SubscriptionLevel, User, VerificationCode
 
 
 def make_user() -> User:

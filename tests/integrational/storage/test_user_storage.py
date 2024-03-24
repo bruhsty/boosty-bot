@@ -4,10 +4,9 @@ from typing import AsyncIterable
 import pytest
 import pytest_asyncio
 from integrational.utils import insert_user
+from registration.adapters.storage import UserStorage
+from registration.domain import models
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from bruhsty.domain import models
-from bruhsty.storage.user.postgres import UserStorage
 
 
 @pytest_asyncio.fixture(scope="function")
