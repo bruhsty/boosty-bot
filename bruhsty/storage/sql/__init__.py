@@ -1,9 +1,11 @@
 from .base import Base
-from .errors import NoRowAffectedError, SQLStorageError
 from .base_storage import BaseSQLStorage
+from .errors import NoRowAffectedError, SQLStorageError
 
 __all__ = [
-    "base", "spec", "Base",
+    "base",
+    "spec",
+    "Base",
     "NoRowAffectedError",
     "SQLStorageError",
     "BaseSQLStorage",

@@ -1,0 +1,33 @@
+env: prod
+
+bot:
+  token: 0000000000:AAAAAAAAAAAAAA_BBBBBBBBBB-CCCCCCCCC
+  updates: polling
+  webhook:
+    url: https://exmaple.com/webhook
+    secret_token: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+    max_connections: 40
+    host: 127.0.0.1
+    port: 8080
+
+  polling:
+    timeout: 10
+
+smtp:
+  host: 'smtp.example.com'
+  port: 465
+  username: email@example.com
+  password: strong!password
+  use_tls: true
+
+boosty:
+  refresh_token: 'AAAAAAAAAAAAAAAAAAAAAA'
+  access_token: 'BBBBBBBBBBBBBBBBBB'
+
+database:
+  host: postgres
+  port: 5432
+  username: bot
+  password: bot
+  database: bot
+  ssl_mode: disable

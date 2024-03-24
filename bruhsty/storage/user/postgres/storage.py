@@ -1,67 +1,49 @@
-import typing
-from typing import Any, AsyncIterable, Sequence
+from typing import Iterable
 
-from typing_extensions import Unpack
+import sqlalchemy as sa
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
-from . import schemas
-from ..models import User, UserUpdate
-from ...specs import Specification, Field
-from ...sql import BaseSQLStorage
+from bruhsty.domain import events, models
+
+from . import schema
 
 
-class UserStorage(BaseSQLStorage):
-    Schema = schemas.User
-    ModelGet = User
-    ModelCreate = User
-    ModelUpdate = UserUpdate
+class UserStorage:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+        self.seen = set[models.User]()
 
-    if typing.TYPE_CHECKING:
-        async def create(self, model: User) -> User:
-            ...
+    async def add(self, user: models.User) -> None:
+        self.session.add(schema.User.from_model(user))
+        self.seen.add(user)
 
-        def update(
-                self,
-                filter_: Specification,
-                **updates: Unpack[UserUpdate],
-        ) -> None:
-            ...
+    async def get(self, user_id: int) -> models.User | None:
+        load_profiles = joinedload(schema.User.boosty_profiles)
+        load_profile_level = load_profiles.joinedload(schema.BoostyProfile.level)
+        load_verification_codes = load_profiles.joinedload(schema.BoostyProfile.verification_codes)
 
-        def find(
-                self,
-                filter_: Specification,
-                limit: int | None = None,
-                offset: int | None = None,
-        ) -> AsyncIterable[User]:
-            ...
-
-        async def find_all(
-                self,
-                filter_: Specification,
-                limit: int | None = None,
-                offset: int | None = None,
-        ) -> Sequence[User]:
-            ...
-
-        async def delete(
-                self,
-                filter_: Specification
-        ) -> None:
-            ...
-
-    def model_to_schema(self, model: User) -> schemas.User:
-        return schemas.User(
-            telegram_id=model.telegram_id,
-            email=model.email,
-            is_verified=model.is_verified,
+        query = (
+            sa.select(schema.User)
+            .where(schema.User.telegram_id == user_id)
+            .options(load_profiles, load_profile_level, load_verification_codes)
         )
 
-    def schema_to_model(self, schema: schemas.User) -> User:
-        return schema.to_model()
+        result = (await self.session.execute(query)).unique().one_or_none()
 
-    def resolve_name(self, name: str) -> Any:
-        assert isinstance(User.telegram_id, Field)
-        return {
-            User.telegram_id.field: schemas.User.telegram_id,
-            User.email.field: schemas.User.email,
-            User.is_verified.field: schemas.User.is_verified,
-        }[name]
+        if result is None:
+            return None
+
+        user = result[0].to_model()
+        self.seen.add(user)
+
+        return user
+
+    async def collect_events(self) -> Iterable[events.Event]:
+        new_events = []
+        for user in self.seen:
+            new_events.extend(user.pop_all_events())
+        return new_events
+
+    async def close(self) -> None:
+        self.seen.clear()

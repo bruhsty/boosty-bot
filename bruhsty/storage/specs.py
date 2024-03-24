@@ -3,12 +3,12 @@ from __future__ import annotations
 import abc
 import enum
 from dataclasses import dataclass
-from typing import Generic, TypeVar, overload, Any
 from types import EllipsisType
+from typing import Any, Generic, TypeVar, overload
 
 __all__ = ["Operator", "Specification", "And", "Or", "Not", "Compare", "Field"]
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class Operator(str, enum.Enum):
@@ -32,13 +32,11 @@ class Specification(abc.ABC):
 
 
 class And(Specification):
-
     def __init__(self, *specs: Specification) -> None:
         self.specs = specs
 
 
 class Or(Specification):
-
     def __init__(self, *specs: Specification) -> None:
         self.specs = specs
 
@@ -48,22 +46,19 @@ class Not(Specification):
         self.spec = spec
 
 
-FieldType = TypeVar('FieldType')
+FieldType = TypeVar("FieldType")
 
 
 class Field(Generic[T]):
-
     def __init__(self, default: T | EllipsisType = ..., field_name: str | None = None) -> None:
         self.field = field_name
         self.value = default
 
     @overload
-    def __get__(self, obj: None, owner: Any) -> T:
-        ...
+    def __get__(self, obj: None, owner: Any) -> T: ...
 
     @overload
-    def __get__(self, obj: object, owner: Any) -> Field[T]:
-        ...
+    def __get__(self, obj: object, owner: Any) -> Field[T]: ...
 
     def __get__(self, obj: object | None, owner: Any) -> T | Field[T]:
         if obj is None:

@@ -1,4 +1,4 @@
-__all__ = ['register_commands']
+__all__ = ["register_commands"]
 
 from aiogram import Router
 from aiogram.filters import Command

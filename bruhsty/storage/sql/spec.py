@@ -1,7 +1,8 @@
 import functools
 import operator
 from typing import Any, Callable, TypeAlias
-from bruhsty.storage.specs import Specification, Compare, Or, And, Not, Operator
+
+from bruhsty.storage.specs import And, Compare, Not, Operator, Or, Specification
 
 NameResolver: TypeAlias = Callable[[str], Any]
 

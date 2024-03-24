@@ -3,16 +3,18 @@ import logging
 import pathlib
 import sys
 
-from bruhsty import app
-from bruhsty import config
+from bruhsty import app, config
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(prog="bruhsty")
-    parser.add_argument("-c", "--config",
-                        type=pathlib.Path,
-                        default=pathlib.Path("./config/config.yaml"),
-                        help="path to config file")
+    parser.add_argument(
+        "-c",
+        "--config",
+        type=pathlib.Path,
+        default=pathlib.Path("./config/config.yaml"),
+        help="path to config file",
+    )
     args = parser.parse_args(sys.argv[1:])
 
     cfg = config.parse_file(args.config)
@@ -31,5 +33,5 @@ def main():
     app.run(cfg, logger)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

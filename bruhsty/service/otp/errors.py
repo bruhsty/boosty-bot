@@ -6,7 +6,6 @@ class OTPServiceError(Exception):
 
 
 class CodeAlreadyUsedError(OTPServiceError):
-
     def __init__(self, code: str, email: str, telegram_id: int, used_at: datetime) -> None:
         super().__init__(self, f"Code {code} sent to f{email} has already been used at f{used_at}")
         self.code = code
@@ -16,7 +15,6 @@ class CodeAlreadyUsedError(OTPServiceError):
 
 
 class CodeInvalidError(OTPServiceError):
-
     def __init__(self, code: str, email: str, telegram_id: int) -> None:
         super().__init__(self, f"Code {code} is invalid")
         self.code = code
@@ -25,7 +23,6 @@ class CodeInvalidError(OTPServiceError):
 
 
 class CodeExpiredError(OTPServiceError):
-
     def __init__(self, code: str, email: str, telegram_id: int, valid_until: datetime) -> None:
         super().__init__(self, f"Code {code} has expired")
         self.code = code

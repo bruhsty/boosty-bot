@@ -9,10 +9,10 @@ class User:
     is_verified = Field[bool]()
 
     def __init__(
-            self,
-            telegram_id: int,
-            email: str,
-            is_verified: bool,
+        self,
+        telegram_id: int,
+        email: str,
+        is_verified: bool,
     ) -> None:
         self.telegram_id = telegram_id
         self.email = email

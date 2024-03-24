@@ -1,10 +1,7 @@
 import enum
 import pathlib
-from typing import Literal
 
 import yaml
-from pydantic import field_validator
-
 from pydantic_settings import BaseSettings
 
 __all__ = ["Config", "parse_file", "UpdateType", "Env"]
@@ -13,6 +10,7 @@ __all__ = ["Config", "parse_file", "UpdateType", "Env"]
 class Env(str, enum.Enum):
     PROD = "prod"
     DEV = "prod"
+    TEST = "test"
 
 
 class UpdateType(str, enum.Enum):
@@ -54,17 +52,27 @@ class SmtpConfig(BaseSettings):
     use_tls: bool = True
 
 
+class DataBaseConfig(BaseSettings):
+    host: str
+    port: int
+    username: str
+    password: str
+    database: str
+    ssl_mode: str
+
+
 class Config(BaseSettings):
     env: Env
     bot: BotConfig
     boosty: BoostyConfig
     smtp: SmtpConfig
+    database: DataBaseConfig
 
 
 def parse_file(config_path: str | pathlib.Path) -> Config:
     if not isinstance(config_path, pathlib.Path):
         config_path = pathlib.Path(config_path)
 
-    with open(config_path, 'r') as file:
+    with open(config_path, "r") as file:
         raw_data = yaml.full_load(file)
         return Config(**raw_data)

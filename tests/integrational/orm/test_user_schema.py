@@ -5,7 +5,8 @@ import sqlalchemy as sa
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bruhsty.storage.user.postgres.schemas import User, BoostyProfile, SubscriptionLevel
+from bruhsty.domain import models
+from bruhsty.storage.user.postgres.schema import BoostyProfile, SubscriptionLevel, User
 
 
 async def execute_text(session: AsyncSession, query: str) -> tuple:
@@ -92,7 +93,7 @@ async def test_user_schema_watches_profile_updates(session: AsyncSession):
                 ),
                 banned=False,
             ),
-        ]
+        ],
     )
 
     session.add(user)
@@ -102,10 +103,7 @@ async def test_user_schema_watches_profile_updates(session: AsyncSession):
     session.add(user)
     await session.commit()
 
-    [[name]] = await execute_text(
-        session,
-        "SELECT name FROM boosty_profiles WHERE user_id=123"
-    )
+    [[name]] = await execute_text(session, "SELECT name FROM boosty_profiles WHERE user_id=123")
 
     assert name == "John Smith"
 
@@ -123,10 +121,7 @@ async def test_can_append_boosty_profile_to_user(session: AsyncSession):
         banned=False,
     )
 
-    user = User(
-        telegram_id=123,
-        boosty_profiles=[]
-    )
+    user = User(telegram_id=123, boosty_profiles=[])
     session.add(user)
     await session.commit()
 
@@ -135,8 +130,7 @@ async def test_can_append_boosty_profile_to_user(session: AsyncSession):
     await session.commit()
 
     [[exists]] = await execute_text(
-        session,
-        "SELECT true FROM boosty_profiles WHERE name='John Doe'"
+        session, "SELECT true FROM boosty_profiles WHERE name='John Doe'"
     )
     assert exists
 
@@ -156,7 +150,7 @@ async def test_profile_is_deleted_if_removed_from_user(session: AsyncSession):
                 ),
                 banned=False,
             ),
-        ]
+        ],
     )
 
     session.add(user)
@@ -164,8 +158,39 @@ async def test_profile_is_deleted_if_removed_from_user(session: AsyncSession):
     user.boosty_profiles.pop()
     await session.commit()
 
-    [[count]] = await execute_text(
-        session,
-        "SELECT count(*) FROM boosty_profiles"
-    )
+    [[count]] = await execute_text(session, "SELECT count(*) FROM boosty_profiles")
     assert count == 0
+
+
+@pytest.mark.asyncio
+async def test_user_to_model_when_user_saved(session: AsyncSession):
+    user = User(
+        telegram_id=123,
+        boosty_profiles=[
+            BoostyProfile(
+                name="John Doe",
+                email="johndoe@example.com",
+                next_pay_time=datetime.datetime(2077, 1, 1),
+                level=SubscriptionLevel(
+                    name="Paid subscription level",
+                    price=200,
+                    is_archived=True,
+                ),
+                banned=False,
+            ),
+        ],
+    )
+    session.add(user)
+    await session.commit()
+    model = user.to_model()
+    assert type(model) is models.User
+    assert model.id == 123
+    assert len(model.profiles) == 1
+    profile = model.profiles.pop()
+    assert profile.id == 1
+    assert profile.name == "John Doe"
+    assert profile.email == "johndoe@example.com"
+    assert profile.next_pay_time == datetime.datetime(2077, 1, 1)
+    assert profile.level.name == "Paid subscription level"
+    assert profile.level.price == 200
+    assert profile.level.is_archived is True

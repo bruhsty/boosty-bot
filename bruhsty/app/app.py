@@ -1,8 +1,7 @@
 import logging
 
-from bruhsty.bot import BruhstyBot
-
 from bruhsty import config
+from bruhsty.bot import BruhstyBot
 from bruhsty.config import UpdateType
 
 

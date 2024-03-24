@@ -1,91 +1,71 @@
 import abc
-from typing import Sequence, AsyncIterable, Any, Type
+from typing import Any, AsyncIterable, Generic, Protocol, Sequence, TypeVar
+
 import sqlalchemy as sa
-from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from bruhsty.storage.specs import Specification
-from .errors import NoRowAffectedError
+
 from .spec import spec_to_query
 
+ID = TypeVar("ID")
 
-class BaseSQLStorage(abc.ABC):
-    Schema: Type
-    ModelCreate: Type
-    ModelGet: Type
-    ModelUpdate: Type
 
-    def __init__(self, sessionmaker: async_sessionmaker[AsyncSession]) -> None:
-        self.sessionmaker = sessionmaker
+class Model(Protocol[ID]):
+    id: ID
 
-    async def create(self, model: Any) -> Any:
-        async with self.sessionmaker() as session:
-            schema = self.model_to_schema(model)
-            session.add(schema)
-            return self.schema_to_model(schema)
 
-    async def find_all(
-            self,
-            filter_: Specification,
-            limit: int | None = None,
-            offset: int | None = None,
+class BaseSQLStorage(Generic[ID], abc.ABC):
+    Select: Any
+
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+        self.seen = set[Model[ID]]()
+
+    async def add(self, model: Any) -> Any:
+        schema = self._model_to_schema(model)
+        self.session.add(schema)
+        self.seen.add(model)
+        return self._schema_to_model(schema)
+
+    async def get_all(
+        self,
+        filter_: Specification,
+        limit: int | None = None,
+        offset: int | None = None,
     ) -> Sequence[Any]:
-        return [result async for result in self.find(filter_, limit, offset)]
+        return [result async for result in self.get(filter_, limit, offset)]
 
-    async def find(
-            self,
-            filter_: Specification,
-            limit: int | None = None,
-            offset: int | None = None,
+    async def get(
+        self,
+        filter_: Specification,
+        limit: int | None = None,
+        offset: int | None = None,
     ) -> AsyncIterable[Any]:
-        async with self.sessionmaker() as session:
-            query = self._build_find_query(filter_, limit, offset)
-            cursor = await session.stream_scalars(query)
-            async for result in cursor:  # type: ignore
-                yield self.schema_to_model(result)
-
-    async def update(
-            self,
-            filter_: Specification,
-            **updates: Any,
-    ) -> None:
-        async with self.sessionmaker() as session:
-            query = self._build_update_query(filter_, **updates)
-            result = await session.execute(query)
-        if result.rowcount == 0:
-            raise NoRowAffectedError("No one row was affected by update query")
-
-    async def delete(
-            self,
-            filter_: Specification
-    ) -> None:
-        async with self.sessionmaker() as session:
-            query = self._build_delete_query(filter_)
-            result = await session.execute(query)
-        if result.rowcount == 0:
-            raise NoRowAffectedError("No one row was affected by delete query")
+        query = self._build_find_query(filter_, limit, offset)
+        cursor = await self.session.stream_scalars(query)
+        async for result in cursor:  # type: ignore
+            yield self._schema_to_model(result)
 
     @abc.abstractmethod
-    def model_to_schema(self, model: Any) -> Any:
+    def _model_to_schema(self, model: Any) -> Any:
         pass
 
     @abc.abstractmethod
-    def schema_to_model(self, schema: Any) -> Any:
+    def _schema_to_model(self, schema: Any) -> Any:
         pass
 
     @abc.abstractmethod
-    def resolve_name(self, name: str) -> Any:
+    def _resolve_name(self, name: str) -> Any:
         pass
 
     def _build_find_query(
-            self,
-            filter_: Specification,
-            limit: int | None = None,
-            offset: int | None = None,
+        self,
+        filter_: Specification,
+        limit: int | None = None,
+        offset: int | None = None,
     ) -> sa.Select:
-        query: sa.Select = (
-            sa.Select(self.Schema)
-            .where(spec_to_query(filter_, self.resolve_name))
-        )
+        query: sa.Select = sa.Select(self.Select).where(spec_to_query(filter_, self._resolve_name))
         if limit is not None:
             query = query.limit(limit)
 
@@ -94,15 +74,5 @@ class BaseSQLStorage(abc.ABC):
 
         return query
 
-    def _build_update_query(self, filter_: Specification, **updates: Any) -> sa.Update:
-        return (
-            sa.update(self.Schema)
-            .where(spec_to_query(filter_, self.resolve_name))
-            .values(**updates)
-        )
-
-    def _build_delete_query(self, filter_: Specification) -> sa.Delete:
-        return (
-            sa.delete(self.Schema)
-            .where(spec_to_query(filter_, self.resolve_name))
-        )
+    async def close(self) -> None:
+        self.seen.clear()

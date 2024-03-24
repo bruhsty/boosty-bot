@@ -1,17 +1,21 @@
 import contextlib
 from typing import AsyncIterator
 
-from sqlalchemy.ext.asyncio import AsyncAttrs, async_sessionmaker, AsyncSession, create_async_engine
-from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import MetaData
+from sqlalchemy.ext.asyncio import (
+    AsyncAttrs,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+from sqlalchemy.orm import DeclarativeBase
 
 __all__ = ["metadata", "Base", "connect"]
 
 metadata = MetaData()
 
 
-class Base(AsyncAttrs, DeclarativeBase):
-    ...
+class Base(AsyncAttrs, DeclarativeBase): ...
 
 
 @contextlib.asynccontextmanager
