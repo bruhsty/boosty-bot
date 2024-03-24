@@ -6,7 +6,7 @@ services:
       dockerfile: 'Dockerfile.dev'
     working_dir: "/project/tests/"
     entrypoint: [ "poetry" ]
-    command: [ "run", "pytest", "--cov=bruhsty", "--cov-report=html", "." ]
+    command: [ "run", "pytest", "--cov=../src", "--cov-report=html", "." ]
     volumes:
       - .:/project/
       - poetry_venv:/root/.cache/pypoetry/virtualenvs
