@@ -1,6 +1,6 @@
 from aiogram import Router
 
-from .commands import register_commands
+from .dialogs import register_dialogs
 
 
 async def on_startup():
@@ -12,6 +12,6 @@ async def on_shutdown():
 
 
 def register_handlers(router: Router):
-    register_commands(router)
+    register_dialogs(router)
     router.startup.register(on_startup)
     router.shutdown.register(on_shutdown)

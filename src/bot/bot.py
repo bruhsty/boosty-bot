@@ -2,6 +2,7 @@ import asyncio
 from logging import Logger
 
 import aiogram
+import aiogram_dialog
 import uvicorn
 from aiogram.fsm.storage.base import BaseStorage
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -25,6 +26,7 @@ class BruhstyBot:
         self.dp = aiogram.Dispatcher(storage=self.storage)
         self.logger = logger
         register_handlers(self.dp)
+        aiogram_dialog.setup_dialogs(self.dp)
 
     async def register_webhook(
         self,
