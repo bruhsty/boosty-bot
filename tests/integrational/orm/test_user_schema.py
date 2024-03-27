@@ -2,7 +2,7 @@ import datetime
 
 import pytest
 import sqlalchemy as sa
-from registration.adapters.storage.schema import BoostyProfile, SubscriptionLevel, User
+from registration.adapters.storage.schema import SubscriptionLevel, User
 from registration.domain import models
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession

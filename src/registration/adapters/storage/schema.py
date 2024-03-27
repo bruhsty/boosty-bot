@@ -5,10 +5,11 @@ from datetime import datetime
 
 import sqlalchemy as sa
 from common.orm import Base
-from registration.domain import models
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-__all__ = ["User", "BoostyProfile", "SubscriptionLevel", "VerificationCode"]
+from registration.domain import models
+
+__all__ = ["User", "SubscriptionLevel", "VerificationCode"]
 
 
 class CreatedAtMixin:
@@ -30,7 +31,8 @@ class User(Base, CreatedAtMixin):
     __tablename__ = "users"
 
     telegram_id: Mapped[int] = mapped_column(sa.Integer(), primary_key=True)
-    boosty_profiles: Mapped[list[BoostyProfile]] = relationship(
+
+    emails: Mapped[list[UserEmail]] = relationship(
         cascade="all, delete-orphan",
         lazy="noload",
     )
@@ -38,59 +40,27 @@ class User(Base, CreatedAtMixin):
     def to_model(self) -> models.User:
         return models.User(
             telegram_id=self.telegram_id,
-            profiles=[p.to_model() for p in self.boosty_profiles],
+            emails=[email.to_model() for email in self.emails],
         )
 
     @classmethod
     def from_model(cls, model: models.User) -> User:
         return User(
-            telegram_id=model.id,
-            boosty_profiles=[BoostyProfile.from_model(p) for p in model.profiles],
+            telegram_id=model.id, emails=[UserEmail.from_orm(email) for email in model.emails]
         )
 
 
-class BoostyProfile(Base, CreatedAtMixin):
-    __tablename__ = "boosty_profiles"
+class UserEmail(Base, CreatedAtMixin):
+    __tablename__ = "user_emails"
 
-    profile_id: Mapped[int] = mapped_column(sa.Integer(), primary_key=True)
+    email: Mapped[str] = mapped_column(sa.String(), primary_key=True, nullable=False)
     user_id: Mapped[int] = mapped_column(sa.ForeignKey("users.telegram_id"))
-    name: Mapped[str]
-    email: Mapped[str]
-    level_id: Mapped[int] = mapped_column(
-        sa.ForeignKey("boosty_subscription_levels.level_id"), nullable=True
-    )
-    level: Mapped[SubscriptionLevel] = relationship(
-        cascade="all, delete-orphan",
-        single_parent=True,
-        lazy="noload",
-    )
-    next_pay_time: Mapped[datetime]
-    banned: Mapped[bool]
-    verification_codes: Mapped[list[VerificationCode]] = relationship(
-        cascade="all, delete-orphan", lazy="noload"
-    )
 
-    def to_model(self) -> models.BoostyProfile:
-        return models.BoostyProfile(
-            id=self.profile_id,
-            email=self.email,
-            name=self.name,
-            level=self.level.to_model() if self.level else None,
-            next_pay_time=self.next_pay_time,
-            banned=self.banned,
-            verification_codes=[c.to_model() for c in self.verification_codes],
-        )
+    def to_model(self) -> models.Email:
+        pass
 
-    @classmethod
-    def from_model(cls, model: models.BoostyProfile) -> BoostyProfile:
-        return BoostyProfile(
-            profile_id=model.id,
-            name=model.name,
-            email=model.email,
-            level=SubscriptionLevel.from_model(model.level) if model.level else None,
-            next_pay_time=model.next_pay_time,
-            banned=model.banned,
-        )
+    def from_model(cls, model: models.Email) -> UserEmail:
+        pass
 
 
 class SubscriptionLevel(Base, CreatedAtMixin):
@@ -123,7 +93,7 @@ class VerificationCode(Base, CreatedAtMixin):
     __tablename__ = "verification_codes"
 
     code_id: Mapped[uuid.UUID] = mapped_column(sa.UUID(as_uuid=True), primary_key=True)
-    value: Mapped[str]
+    value: Mapped[str] = mapped_column(sa.String(length=10), index=True)
     valid_until: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True))
     assigned_to_user_id: Mapped[int] = mapped_column(sa.ForeignKey("users.telegram_id"))
     assigned_to_profile_id: Mapped[int] = mapped_column(sa.ForeignKey("boosty_profiles.profile_id"))

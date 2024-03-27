@@ -1,19 +1,21 @@
+import uuid
 from dataclasses import dataclass
+from datetime import datetime
 
 from common.domain import DomainEvent
 
 
 @dataclass
-class BoostyProfileAdded(DomainEvent):
+class VerificationCodeIssued(DomainEvent):
     user_id: int
-    profile_id: int
-    profile_email: str
-    profile_name: str
+    email: str
+    code_id: uuid.UUID
+    code: str
+    code_valid_until: datetime
 
 
 @dataclass
-class BoostyProfileVerified(DomainEvent):
+class EmailVerified(DomainEvent):
     user_id: int
-    profile_id: int
-    profile_email: str
-    profile_name: str
+    email: str
+    code_id: uuid.UUID
