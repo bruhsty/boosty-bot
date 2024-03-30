@@ -1,6 +1,4 @@
-import argparse
 import logging
-import pathlib
 import sys
 
 import httpx
@@ -38,26 +36,9 @@ class DBEngine(resources.Resource[AsyncEngine]):
         pass
 
 
-def parse_cli_args():
-    parser = argparse.ArgumentParser(prog="bruhsty")
-    parser.add_argument(
-        "-c",
-        "--config",
-        type=pathlib.Path,
-        default=pathlib.Path("./config/config.yaml"),
-        help="path to config file",
-    )
-    return parser.parse_args(sys.argv[1:])
-
-
 class AppContainer(DeclarativeContainer):
     wiring_config = WiringConfiguration(
-        packages=[],
-        modules=[
-            ".router",
-            ".bot",
-            "registration.bot",
-        ],
+        modules=["user.bot.handlers", "user.service_layer.handlers", "user.bot.middlewares"]
     )
 
     config = providers.Configuration()
@@ -101,8 +82,6 @@ class AppContainer(DeclarativeContainer):
     )
 
     state_storage = providers.Singleton(MemoryStorage)
-
-    cli_args = providers.Singleton(parse_cli_args)
 
     logger = providers.Resource(
         logging.basicConfig,

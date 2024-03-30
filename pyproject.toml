@@ -6,9 +6,8 @@ authors = ["Artem Burenin <burenin.aa@yandex.ru>"]
 readme = "README.md"
 packages = [
     { include = "app", from = "src" },
-    { include = "bot", from = "src" },
     { include = "common", from = "src" },
-    { include = "registration", from = "src" },
+    { include = "user", from = "src" },
 ]
 
 [tool.poetry.dependencies]

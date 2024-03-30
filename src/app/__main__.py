@@ -1,3 +1,6 @@
+import argparse
+import pathlib
+import sys
 from typing import Literal
 
 from dependency_injector.wiring import Provide, inject
@@ -20,16 +23,30 @@ def main(
         raise AssertionError("Invalid updates type")
 
 
+def parse_cli_args():
+    parser = argparse.ArgumentParser(prog="bruhsty")
+    parser.add_argument(
+        "-c",
+        "--config",
+        type=pathlib.Path,
+        default=pathlib.Path("./config/config.yaml"),
+        help="path to config file",
+    )
+    return parser.parse_args(sys.argv[1:])
+
+
 if __name__ == "__main__":
     container = AppContainer()
-    container.config.from_yaml("./config/config.yaml")
+    args = parse_cli_args()
+    container.config.from_yaml(args.config)
+
     container.init_resources()
     container.wire(
         modules=[
             __name__,
             ".bot",
-            "registration.bot.handlers",
-            "registration.service_layer.handlers",
+            "user.bot.handlers",
+            "user.service_layer.handlers",
         ],
     )
     main()
