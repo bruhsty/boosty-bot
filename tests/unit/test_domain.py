@@ -1,10 +1,10 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import cast
 
 import pytest
-from registration.domain.events import EmailVerified, VerificationCodeIssued
-from registration.domain.models import Email, InvalidCodeError, User, VerificationCode
+from user.domain.events import EmailVerified, VerificationCodeIssued
+from user.domain.models import Email, InvalidCodeError, User, VerificationCode
 
 
 def new_user() -> User:
@@ -24,10 +24,11 @@ def make_verified_profile() -> Email:
             VerificationCode(
                 id=uuid.uuid4(),
                 value="123-456",
-                valid_until=datetime(2077, 1, 1),
+                valid_until=datetime(2077, 1, 1, tzinfo=timezone.utc),
                 used_at=None,
                 replaced_with=None,
-                created_at=datetime(1998, 1, 1),
+                replaced_with_id=None,
+                created_at=datetime(1998, 1, 1, tzinfo=timezone.utc),
             )
         ]
     )
@@ -42,10 +43,11 @@ def test_email_is_not_verified_if_code_is_not_used():
     code = VerificationCode(
         id=uuid.uuid4(),
         value="123-456",
-        valid_until=datetime(2077, 1, 1),
+        valid_until=datetime(2077, 1, 1, tzinfo=timezone.utc),
         used_at=None,
         replaced_with=None,
-        created_at=datetime(2024, 1, 1),
+        replaced_with_id=None,
+        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
     )
 
     email = make_email_with_codes([code])
@@ -57,10 +59,11 @@ def test_email_if_code_used():
     code = VerificationCode(
         id=uuid.uuid4(),
         value="123-456",
-        valid_until=datetime(2077, 1, 1),
-        used_at=datetime(2024, 1, 2),
+        valid_until=datetime(2077, 1, 1, tzinfo=timezone.utc),
+        used_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
         replaced_with=None,
-        created_at=datetime(2024, 1, 1),
+        replaced_with_id=None,
+        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
     )
     email = make_email_with_codes([code])
 
@@ -81,10 +84,11 @@ def test_email_cannot_be_verified_if_code_expired():
     code = VerificationCode(
         id=uuid.uuid4(),
         value="123-456",
-        valid_until=datetime(1999, 1, 1),
+        valid_until=datetime(1999, 1, 1, tzinfo=timezone.utc),
         used_at=None,
         replaced_with=None,
-        created_at=datetime(1998, 1, 1),
+        replaced_with_id=None,
+        created_at=datetime(1998, 1, 1, tzinfo=timezone.utc),
     )
     email = make_email_with_codes([code])
     user = User.make(telegram_id=123, emails=[email])
@@ -99,10 +103,11 @@ def test_email_cannot_be_verified_if_value_is_wrong():
     code = VerificationCode(
         id=uuid.uuid4(),
         value="123-456",
-        valid_until=datetime(2077, 1, 1),
+        valid_until=datetime(2077, 1, 1, tzinfo=timezone.utc),
         used_at=None,
         replaced_with=None,
-        created_at=datetime(1998, 1, 1),
+        replaced_with_id=None,
+        created_at=datetime(1998, 1, 1, tzinfo=timezone.utc),
     )
     email = make_email_with_codes([code])
     user = User.make(telegram_id=123, emails=[email])
@@ -117,10 +122,11 @@ def test_email_cannot_be_verified_if_code_was_reissued():
     code = VerificationCode(
         id=uuid.uuid4(),
         value="123-456",
-        valid_until=datetime(2077, 1, 1),
+        valid_until=datetime(2077, 1, 1, tzinfo=timezone.utc),
         used_at=None,
-        replaced_with=uuid.uuid4(),
-        created_at=datetime(1998, 1, 1),
+        replaced_with=None,
+        replaced_with_id=uuid.uuid4(),
+        created_at=datetime(1998, 1, 1, tzinfo=timezone.utc),
     )
     email = make_email_with_codes([code])
     user = User.make(telegram_id=123, emails=[email])
@@ -135,10 +141,11 @@ def test_email_can_verify_email():
     code = VerificationCode(
         id=uuid.uuid4(),
         value="123-456",
-        valid_until=datetime(2077, 1, 1),
+        valid_until=datetime(2077, 1, 1, tzinfo=timezone.utc),
         used_at=None,
+        replaced_with_id=None,
         replaced_with=None,
-        created_at=datetime(1998, 1, 1),
+        created_at=datetime(1998, 1, 1, tzinfo=timezone.utc),
     )
     email = make_email_with_codes([code])
     user = User.make(telegram_id=1234, emails=[email])

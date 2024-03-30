@@ -1,11 +1,11 @@
 import datetime
+import uuid
 
 import pytest
 import sqlalchemy as sa
-from registration.adapters.storage.schema import SubscriptionLevel, User
-from registration.domain import models
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from user.adapters.storage.schema import User, UserEmail, VerificationCode
 
 
 async def execute_text(session: AsyncSession, query: str) -> tuple:
@@ -14,20 +14,23 @@ async def execute_text(session: AsyncSession, query: str) -> tuple:
 
 @pytest.mark.asyncio
 async def test_user_schema_can_save_user(session: AsyncSession):
-    profile = BoostyProfile(
-        name="John Doe",
-        email="johndoe@example.com",
-        next_pay_time=datetime.datetime(2077, 1, 1),
-        level=SubscriptionLevel(
-            name="Paid subscription level",
-            price=200,
-        ),
-        banned=False,
-    )
+    expected_valid_until = datetime.datetime(2077, 1, 1, tzinfo=datetime.timezone.utc)
+    expected_code_id = uuid.uuid4()
     user = User(
         telegram_id=123,
-        boosty_profiles=[
-            profile,
+        emails=[
+            UserEmail(
+                email="johndoe@example.com",
+                verification_codes=[
+                    VerificationCode(
+                        code_id=expected_code_id,
+                        email="johndoe@example.com",
+                        valid_until=expected_valid_until,
+                        value="123-456",
+                        assigned_to_user_id=123,
+                    )
+                ],
+            )
         ],
     )
     session.add(user)
@@ -40,28 +43,27 @@ async def test_user_schema_can_save_user(session: AsyncSession):
 
     assert telegram_id == 123
 
-    [[level_id, name, email]] = await execute_text(
+    [[email]] = await execute_text(
         session,
-        "SELECT level_id, name, email FROM boosty_profiles WHERE user_id=123",
+        "SELECT email FROM user_emails WHERE user_id=123",
     )
 
-    assert name == "John Doe"
     assert email == "johndoe@example.com"
 
-    [[name, price]] = await execute_text(
+    [[code_id, value, valid_until]] = await execute_text(
         session,
-        f"SELECT name, price FROM boosty_subscription_levels WHERE level_id={level_id}",
+        "SELECT code_id, value, valid_until FROM verification_codes "
+        "WHERE email='johndoe@example.com' AND assigned_to_user_id=123",
     )
-
-    assert name == "Paid subscription level"
-    assert price == 200
+    assert code_id == expected_code_id
+    assert value == "123-456"
+    assert valid_until == expected_valid_until
 
 
 @pytest.mark.asyncio
 async def test_user_schema_raises_if_telegram_id_duplicated(session: AsyncSession):
     user = User(
         telegram_id=123,
-        boosty_profiles=[],
     )
     session.add(user)
 
@@ -81,115 +83,43 @@ async def test_user_schema_raises_if_telegram_id_duplicated(session: AsyncSessio
 async def test_user_schema_watches_profile_updates(session: AsyncSession):
     user = User(
         telegram_id=123,
-        boosty_profiles=[
-            BoostyProfile(
-                name="John Doe",
-                email="johndoe@example.com",
-                next_pay_time=datetime.datetime(2077, 1, 1),
-                level=SubscriptionLevel(
-                    name="Paid subscription level",
-                    price=200,
-                ),
-                banned=False,
-            ),
+        emails=[
+            UserEmail(email="johndoe@example.com"),
         ],
     )
 
     session.add(user)
     await session.commit()
 
-    user.boosty_profiles[0].name = "John Smith"
+    user.emails.append(
+        UserEmail(
+            email="johndoe1@example.com",
+        )
+    )
     session.add(user)
     await session.commit()
 
-    [[name]] = await execute_text(session, "SELECT name FROM boosty_profiles WHERE user_id=123")
-
-    assert name == "John Smith"
-
-
-@pytest.mark.asyncio
-async def test_can_append_boosty_profile_to_user(session: AsyncSession):
-    profile = BoostyProfile(
-        name="John Doe",
-        email="johndoe@example.com",
-        next_pay_time=datetime.datetime(2077, 1, 1),
-        level=SubscriptionLevel(
-            name="Paid subscription level",
-            price=200,
-        ),
-        banned=False,
+    [[email], [email1]] = await execute_text(
+        session, "SELECT email FROM user_emails WHERE user_id=123 ORDER BY email"
     )
 
-    user = User(telegram_id=123, boosty_profiles=[])
-    session.add(user)
-    await session.commit()
-
-    user.boosty_profiles.append(profile)
-    session.add(user)
-    await session.commit()
-
-    [[exists]] = await execute_text(
-        session, "SELECT true FROM boosty_profiles WHERE name='John Doe'"
-    )
-    assert exists
+    assert email == "johndoe1@example.com"
+    assert email1 == "johndoe@example.com"
 
 
 @pytest.mark.asyncio
 async def test_profile_is_deleted_if_removed_from_user(session: AsyncSession):
     user = User(
         telegram_id=123,
-        boosty_profiles=[
-            BoostyProfile(
-                name="John Doe",
-                email="johndoe@example.com",
-                next_pay_time=datetime.datetime(2077, 1, 1),
-                level=SubscriptionLevel(
-                    name="Paid subscription level",
-                    price=200,
-                ),
-                banned=False,
-            ),
+        emails=[
+            UserEmail(email="johndoe@example.com"),
         ],
     )
 
     session.add(user)
     await session.commit()
-    user.boosty_profiles.pop()
+    user.emails.pop()
     await session.commit()
 
-    [[count]] = await execute_text(session, "SELECT count(*) FROM boosty_profiles")
+    [[count]] = await execute_text(session, "SELECT count(*) FROM user_emails")
     assert count == 0
-
-
-@pytest.mark.asyncio
-async def test_user_to_model_when_user_saved(session: AsyncSession):
-    user = User(
-        telegram_id=123,
-        boosty_profiles=[
-            BoostyProfile(
-                name="John Doe",
-                email="johndoe@example.com",
-                next_pay_time=datetime.datetime(2077, 1, 1),
-                level=SubscriptionLevel(
-                    name="Paid subscription level",
-                    price=200,
-                    is_archived=True,
-                ),
-                banned=False,
-            ),
-        ],
-    )
-    session.add(user)
-    await session.commit()
-    model = user.to_model()
-    assert type(model) is models.User
-    assert model.id == 123
-    assert len(model.profiles) == 1
-    profile = model.profiles.pop()
-    assert profile.id == 1
-    assert profile.name == "John Doe"
-    assert profile.email == "johndoe@example.com"
-    assert profile.next_pay_time == datetime.datetime(2077, 1, 1)
-    assert profile.level.name == "Paid subscription level"
-    assert profile.level.price == 200
-    assert profile.level.is_archived is True

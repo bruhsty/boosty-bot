@@ -21,7 +21,7 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 from common.orm import Base  # noqa: E402
-from registration.adapters.storage.schema import *  # noqa: E402, F403
+from user.adapters.storage.schema import *  # noqa: E402, F403
 
 target_metadata = Base.metadata
 

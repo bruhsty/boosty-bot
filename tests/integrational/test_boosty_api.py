@@ -1,7 +1,6 @@
 import pytest
 import pytest_asyncio
-from registration.adapters.boosty import BoostyAPI
-from registration.adapters.boosty.api import InvalidBoostyCredentialsError
+from common.adapters.boosty import BoostyAPI, InvalidBoostyCredentialsError
 
 from config import Config
 

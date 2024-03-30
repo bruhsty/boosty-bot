@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import functools
 import os
 import struct
 import uuid
-from dataclasses import dataclass
-from datetime import datetime, timedelta
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 from typing import Sequence
 
 from common.domain import Aggregate, DomainError
@@ -65,9 +66,26 @@ class VerificationCode:
     id: uuid.UUID
     value: str
     valid_until: datetime
-    replaced_with: uuid.UUID | None
+    replaced_with: VerificationCode | None
+    replaced_with_id: uuid.UUID | None
     used_at: datetime | None
-    created_at: datetime = datetime.now()
+    created_at: datetime = field(
+        default_factory=functools.partial(datetime.now, tzinfo=timezone.utc)
+    )
+
+    @property
+    def replaced(self) -> bool:
+        return self.replaced_with_id is not None
+
+    def replace(self, code: VerificationCode) -> None:
+        if self.replaced:
+            raise DomainError(
+                f"Verification code {self.id} has already been "
+                f"replaced with {self.replaced_with_id}"
+            )
+
+        self.replaced_with = code
+        self.replaced_with_id = code.id
 
     def __eq__(self, other: VerificationCode) -> bool:
         if type(other) is not VerificationCode:
@@ -90,13 +108,12 @@ class Email:
 
     @property
     def active_verification_code(self) -> VerificationCode | None:
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
 
         def code_is_valid(c: VerificationCode) -> bool:
             code_not_used = c.used_at is None
             code_not_expired = now <= c.valid_until
-            code_not_replaced = c.replaced_with is None
-            return code_not_used and code_not_expired and code_not_replaced
+            return code_not_used and code_not_expired and not c.replaced
 
         try:
             return next(c for c in self.verification_codes if code_is_valid(c))
@@ -135,12 +152,15 @@ class User(Aggregate[int]):
         self._emails.append(Email(new_email, []))
         self.issue_verification_code(new_email, self.CODE_GENERATOR())
 
+    def remove_email(self, email: str) -> None:
+        self._emails = [e for e in self._emails if e.email != email]
+
     def verify_email(self, unverified_email: str, code_value: str) -> None:
         email = self._get_email(unverified_email)
         if email is None:
             raise EmailNotLinkedError(f"Email {unverified_email} is not linked to user {self.id}")
 
-        now = datetime.now()
+        now = datetime.now(tz=timezone.utc)
 
         code = email.active_verification_code
         if code is None or code.value != code_value:
@@ -160,21 +180,22 @@ class User(Aggregate[int]):
         if email is None:
             raise EmailNotLinkedError(f"Email {unverified_email} is not linked to user {self.id}")
 
-        now = datetime.now()
+        now = datetime.now(tz=timezone.utc)
         new_code = VerificationCode(
             id=uuid.uuid4(),
             value=code_value,
             used_at=None,
             valid_until=now + self.CODE_TTL,
             replaced_with=None,
+            replaced_with_id=None,
             created_at=now,
         )
 
         unused_code = email.active_verification_code
         if unused_code is not None:
-            unused_code.replaced_with = new_code.id
+            unused_code.replace(new_code)
 
-        email.verification_codes.append(new_code)
+        email.verification_codes.insert(0, new_code)
         self._push_event(
             VerificationCodeIssued(
                 time=now,
@@ -185,6 +206,10 @@ class User(Aggregate[int]):
                 code_valid_until=new_code.valid_until,
             )
         )
+
+    @property
+    def emails(self) -> tuple[Email, ...]:
+        return tuple(self._emails)
 
     @property
     def has_email(self) -> bool:

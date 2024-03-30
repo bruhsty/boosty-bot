@@ -1,19 +1,17 @@
 import abc
-from typing import Callable, Generic, Iterable, Protocol, Self, TypeVar
+from typing import Callable, Generic, Iterable, Self, TypeVar
+
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from common.adapters.storage import AbstractStorage
 from common.domain import events
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from common.service_layer import AbstractMessageBus
 
 TID = TypeVar("TID")
 
 
 class Model(Generic[TID]):
     id: TID
-
-
-class MessageBus(Protocol):
-    async def publish(self, *new_events: events.DomainEvent) -> None: ...
 
 
 class UnitOfWorkError(Exception):
@@ -54,7 +52,7 @@ class AbstractUnitOfWork(abc.ABC):
 class SQLUnitOfWork(AbstractUnitOfWork):
     def __init__(
         self,
-        bus: MessageBus,
+        bus: AbstractMessageBus,
         sessionmaker: async_sessionmaker[AsyncSession],
         storage_factories: list[Callable[[AsyncSession], AbstractStorage]],
     ) -> None:

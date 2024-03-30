@@ -1,16 +1,15 @@
-from datetime import datetime
-
 import pytest
 from common.domain import DomainEvent
+from common.service_layer import AbstractMessageBus
 from integrational.orm.test_user_schema import execute_text
 from integrational.utils import insert_user
-from registration.domain.events import BoostyProfileAdded
-from registration.domain.models import BoostyProfile, User
-from registration.service_layer.unit_of_work import UnitOfWork
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from user.domain.events import VerificationCodeIssued
+from user.domain.models import User
+from user.service_layer.unit_of_work import UnitOfWork
 
 
-class FakeMessageBus:
+class FakeMessageBus(AbstractMessageBus):
     def __init__(self) -> None:
         self.events = list[DomainEvent]()
 
@@ -64,11 +63,11 @@ async def test_uow_rollbacks_not_commited_by_default(uow: UnitOfWork, session: A
 @pytest.mark.asyncio
 async def test_uow_commits_changed_data(uow: UnitOfWork):
     async with uow:
-        user = User.new(123456)
+        user = User(123456)
         await uow.user_storage.add(user)
         await uow.commit()
 
-        user = User.new(7689)
+        user = User(7689)
         await uow.user_storage.add(user)
         await uow.rollback()
 
@@ -87,10 +86,8 @@ async def test_uow_collects_event_from_aggregates(uow: UnitOfWork, session: Asyn
 
     async with uow:
         user = await uow.user_storage.get(12345678)
-        profile = BoostyProfile(
-            678, "smith@example.com", "Alex Smith", None, datetime.now(), False, []
-        )
-        user.add_profile(profile)
+
+        user.add_email("johndoe1@example.com")
         await uow.commit()
 
-    assert type(uow.bus.events[0]) is BoostyProfileAdded  # type: ignore
+    assert type(uow.bus.events[0]) is VerificationCodeIssued  # type: ignore

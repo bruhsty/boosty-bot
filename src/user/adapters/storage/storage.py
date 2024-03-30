@@ -3,9 +3,10 @@ from typing import Iterable
 import sqlalchemy as sa
 from common.adapters.storage import AbstractStorage
 from common.domain import DomainEvent
-from registration.domain import models
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
+
+from user.domain import models
 
 from . import schema
 
@@ -20,14 +21,13 @@ class UserStorage(AbstractStorage):
         self.seen.add(user)
 
     async def get(self, user_id: int) -> models.User | None:
-        load_profiles = joinedload(schema.User.boosty_profiles)
-        load_profile_level = load_profiles.joinedload(schema.BoostyProfile.level)
-        load_verification_codes = load_profiles.joinedload(schema.BoostyProfile.verification_codes)
+        load_emails = joinedload(schema.User.emails)
+        load_verification_codes = load_emails.joinedload(schema.UserEmail.verification_codes)
 
         query = (
             sa.select(schema.User)
             .where(schema.User.telegram_id == user_id)
-            .options(load_profiles, load_profile_level, load_verification_codes)
+            .options(load_emails, load_verification_codes)
         )
 
         result = (await self.session.execute(query)).unique().one_or_none()
@@ -39,6 +39,14 @@ class UserStorage(AbstractStorage):
         self.seen.add(user)
 
         return user
+
+    async def persist(self, user: models.User) -> None:
+        load_emails = joinedload(schema.User.emails)
+        load_verification_codes = load_emails.joinedload(schema.UserEmail.verification_codes)
+        merged = await self.session.merge(
+            schema.User.from_model(user), options=(load_emails, load_verification_codes)
+        )
+        self.session.add(merged)
 
     async def collect_events(self) -> Iterable[DomainEvent]:
         new_events = []

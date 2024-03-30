@@ -2,6 +2,7 @@ import enum
 import pathlib
 
 import yaml
+from pydantic import Extra
 from pydantic_settings import BaseSettings
 
 __all__ = ["Config", "parse_file", "UpdateType", "Env"]
@@ -61,7 +62,7 @@ class DataBaseConfig(BaseSettings):
     ssl_mode: str
 
 
-class Config(BaseSettings):
+class Config(BaseSettings, extra=Extra.allow):
     env: Env
     bot: BotConfig
     boosty: BoostyConfig

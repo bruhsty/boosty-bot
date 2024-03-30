@@ -1,38 +1,35 @@
-import argparse
-import logging
-import pathlib
-import sys
+from typing import Literal
 
-import config
-from app import run
+from dependency_injector.wiring import Provide, inject
+
+from app.bot import BruhstyBot
+from app.container import AppContainer
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(prog="bruhsty")
-    parser.add_argument(
-        "-c",
-        "--config",
-        type=pathlib.Path,
-        default=pathlib.Path("./config/config.yaml"),
-        help="path to config file",
-    )
-    args = parser.parse_args(sys.argv[1:])
+@inject
+def main(
+    updates_type: Literal["polling", "webhook"] = Provide[AppContainer.config.bot.updates],
+):
+    bot = BruhstyBot()
 
-    cfg = config.parse_file(args.config)
-    match cfg.env:
-        case config.Env.PROD:
-            level = logging.INFO
-        case config.Env.DEV:
-            level = logging.DEBUG
-        case _:
-            raise AssertionError("environment has invalid value")
-
-    logging.basicConfig(level=level)
-    logger = logging.getLogger()
-    logger.info(f"logging level {level}", {"level": level})
-
-    run(cfg, logger)
+    if updates_type == "polling":
+        bot.start_polling()
+    elif updates_type == "webhook":
+        bot.start_webhook()
+    else:
+        raise AssertionError("Invalid updates type")
 
 
 if __name__ == "__main__":
+    container = AppContainer()
+    container.config.from_yaml("./config/config.yaml")
+    container.init_resources()
+    container.wire(
+        modules=[
+            __name__,
+            ".bot",
+            "registration.bot.handlers",
+            "registration.service_layer.handlers",
+        ],
+    )
     main()

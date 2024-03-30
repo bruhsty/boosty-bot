@@ -1,7 +1,7 @@
 from typing import Literal, Sequence
 
 import httpx
-from registration.domain.models import BoostyProfile
+from user.domain.models import BoostyProfile
 
 from .models import GetSubscribersListResponse
 

@@ -32,11 +32,14 @@ class SMTPEmailService(EmailService):
         message["Content-Type"] = "text/plain; charset=UTF-8"
         message.set_content(body)
 
-        await aiosmtplib.send(
+        response = await aiosmtplib.send(
             message,
             hostname=self.server_host,
             port=self.server_port,
             username=self.username,
             password=self.password,
             start_tls=self.use_tls,
+            timeout=5,
         )
+
+        print(response)

@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import ClassVar, Literal, Sequence
 
 from pydantic import BaseModel, Field
-from registration.domain.models import BoostyProfile, SubscriptionLevel
+from user.domain.models import BoostyProfile, SubscriptionLevel
 
 
 class SubscriptionDataItem(BaseModel):
@@ -73,7 +73,6 @@ class GetSubscribersListResponse(BaseModel):
                     email=subscriber_data.email,
                     next_pay_time=subscriber_data.next_pay_time,
                     level=subscriber_data.level.to_model(),
-                    verification_codes=[],
                     banned=subscriber_data.is_black_listed,
                 )
             )
