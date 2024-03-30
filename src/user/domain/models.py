@@ -17,6 +17,10 @@ class EmailNotLinkedError(DomainError):
     pass
 
 
+class EmailAlreadyAdded(DomainError):
+    pass
+
+
 class InvalidCodeError(DomainError):
     pass
 
@@ -147,7 +151,7 @@ class User(Aggregate[int]):
 
     def add_email(self, new_email: str) -> None:
         if self._get_email(new_email) is not None:
-            return
+            raise EmailAlreadyAdded(f"{new_email} has already been added to user {self.id}")
 
         self._emails.append(Email(new_email, []))
         self.issue_verification_code(new_email, self.CODE_GENERATOR())

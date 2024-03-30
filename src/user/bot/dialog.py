@@ -17,11 +17,32 @@ from .handlers import (
     on_input_verification_code,
     remove_email,
     switch_window,
-    test_getter,
 )
 from .state import MenuStatesGroup
 
 go_back_button = Button(Const("Назад"), id="menu.back", on_click=go_back)
+
+verification_code_input = TextInput(
+    id="menu.add_email.code_input",
+    filter=lambda msg: msg.text.isnumeric() and len(msg.text) == 4,
+    on_error=switch_window(MenuStatesGroup.invalid_email_value),
+    on_success=on_input_verification_code,
+)
+
+
+def check_email(msg_text: str) -> str:
+    if not re.fullmatch(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", msg_text):
+        raise ValueError(f"'{msg_text}' is not a valid email")
+
+    return msg_text
+
+
+email_input = TextInput(
+    id="menu.add_email.email_input",
+    type_factory=check_email,
+    on_error=switch_window(MenuStatesGroup.invalid_email_value),
+    on_success=email_validate,
+)
 
 menu_dialog = Dialog(
     Window(
@@ -62,39 +83,25 @@ menu_dialog = Dialog(
     ),
     Window(
         Const("Введите новый email"),
-        TextInput(
-            id="menu.add_email.email_input",
-            filter=lambda msg: re.fullmatch(
-                r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", msg.text
-            ),
-            on_error=switch_window(MenuStatesGroup.invalid_email_value),
-            on_success=email_validate,
-        ),
+        email_input,
         go_back_button,
-        getter=test_getter,
         state=MenuStatesGroup.email_add,
     ),
     Window(
         Const("На ваш email отправили код, введите его, чтобы завершить регистрацию"),
-        TextInput(
-            id="menu.add_email.code_input",
-            filter=lambda msg: msg.text.isnumeric() and len(msg.text) == 4,
-            on_error=switch_window(MenuStatesGroup.invalid_email_value),
-            on_success=on_input_verification_code,
-        ),
-        getter=test_getter,
+        verification_code_input,
         state=MenuStatesGroup.email_verify,
     ),
     Window(
         Const("Вы ввели некорректный email. Попробуйте ещё раз:"),
         go_back_button,
-        getter=test_getter,
+        email_input,
         state=MenuStatesGroup.invalid_email_value,
     ),
     Window(
         Const("Вы ввели неверный код. попробуйте ещё раз."),
+        verification_code_input,
         go_back_button,
-        getter=test_getter,
         state=MenuStatesGroup.invalid_code,
     ),
     Window(

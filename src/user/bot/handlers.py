@@ -9,7 +9,7 @@ from aiogram_dialog.widgets.kbd import Button
 from app.container import AppContainer
 from dependency_injector.wiring import Provide, inject
 
-from ..domain.models import InvalidCodeError
+from ..domain.models import EmailAlreadyAdded, InvalidCodeError
 from ..service_layer import register
 from ..service_layer.unit_of_work import UnitOfWork
 from .state import MenuStatesGroup
@@ -48,7 +48,14 @@ async def email_validate(
     email: str,
     uow: UnitOfWork = Provide[AppContainer.unit_of_work],
 ) -> None:
-    await register.add_email(msg.from_user.id, email, uow)
+    if "verifying_email" in manager.dialog_data:
+        del manager.dialog_data["verifying_email"]
+
+    try:
+        await register.add_email(msg.from_user.id, email, uow)
+    except EmailAlreadyAdded:
+        return await manager.switch_to(MenuStatesGroup.invalid_email_value)
+
     manager.dialog_data["verifying_email"] = email
     await manager.switch_to(MenuStatesGroup.email_verify)
 
@@ -140,16 +147,6 @@ async def go_back(
     manager: DialogManager,
 ) -> None:
     await manager.back()
-
-
-async def test_getter(*args, **kwargs):
-    return {
-        "selected_email": "johndoe@example.com",
-        "emails": [
-            {"email": "johndoe@example.com"},
-            {"email": "alaexsmith@example.com"},
-        ],
-    }
 
 
 async def get_email_list(
