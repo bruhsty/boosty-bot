@@ -62,12 +62,17 @@ class DataBaseConfig(BaseSettings):
     ssl_mode: str
 
 
+class Admin(BaseSettings):
+    id: int
+
+
 class Config(BaseSettings, extra=Extra.allow):
     env: Env
     bot: BotConfig
     boosty: BoostyConfig
     smtp: SmtpConfig
     database: DataBaseConfig
+    admins: list[Admin]
 
 
 def parse_file(config_path: str | pathlib.Path) -> Config:

@@ -1,14 +1,44 @@
+env: prod
+
+logger:
+  level: INFO
+
 bot:
-  token: '<Here is your bot token>'
-  fetch_updates: polling
+  token: token
+  updates: polling
   webhook:
-    url: '<Webhook url>'
-    secret_token: '<Secret token. Optional.>'
+    url: https://xrayvpn.space/bruhsty/webhook
+    secret_token: '123456'
     max_connections: 40
+    host: 127.0.0.1
+    port: 8080
+    workers: 16
+
   polling:
     timeout: 10
 
 
+database:
+  host: localhost
+  port: 5432
+  username: bot
+  password: bot
+  database: bot
+  ssl_mode: disable
+
+smtp:
+  host: 'smtp.gmail.com'
+  port: 587
+  username: abc@gmail.com
+  password: 'password'
+  use_tls: true
+
+admins:
+  - id: 587205576 #Anton
+  - id: 1195647957 #Artem
+
+
+
 boosty:
-  email: '<Here is your email>'
-  password: '<Here is your password>'
+  refresh_token: ''
+  access_token: ''
