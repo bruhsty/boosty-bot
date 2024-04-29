@@ -77,7 +77,11 @@ menu_dialog = Dialog(
             on_click=email_resend_code,
         ),
         Button(Const("Отвязать"), id="menu.email.remove", on_click=remove_email),
-        go_back_button,
+        Button(
+            Const("Назад"),
+            id="menu.email.go_back",
+            on_click=switch_window(MenuStatesGroup.main),
+        ),
         state=MenuStatesGroup.email_settings,
         getter=get_email_list,
     ),

@@ -1,10 +1,10 @@
+import typing
 from typing import Any
 
 from aiogram.fsm.state import State
 from aiogram.types import CallbackQuery, Message
 from aiogram_dialog import DialogManager, StartMode
 from aiogram_dialog.widgets.input import ManagedTextInput
-from aiogram_dialog.widgets.input.text import OnError, OnSuccess
 from aiogram_dialog.widgets.kbd import Button
 from app.container import AppContainer
 from dependency_injector.wiring import Provide, inject
@@ -21,6 +21,11 @@ __all__ = [
     "on_email_selected",
     "remove_email",
     "go_back",
+    "email_validate",
+    "email_resend_code",
+    "get_email_list",
+    "on_input_verification_code",
+    "switch_window",
 ]
 
 
@@ -32,9 +37,18 @@ async def menu(
     await dialog_manager.start(MenuStatesGroup.main, mode=StartMode.RESET_STACK)
 
 
-def switch_window(new_state: State) -> OnError | OnSuccess:
-    async def switcher(*args, **_) -> None:
+class WindowSwitcher(typing.Protocol):
+    @typing.overload
+    async def __call__(self, cb: CallbackQuery, button: Button, manager: DialogManager) -> None: ...
+
+    async def __call__(self, *args, **kwargs) -> None: ...
+
+
+def switch_window(new_state: State, reset_stack: bool = False) -> WindowSwitcher:
+    async def switcher(*args, **kwargs) -> None:
         manager: DialogManager = args[2]
+        if reset_stack:
+            await manager.reset_stack()
         return await manager.switch_to(new_state)
 
     return switcher
