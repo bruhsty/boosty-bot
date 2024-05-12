@@ -1,14 +1,15 @@
 services:
-  bot:
+  test:
     image: 'burenotti/bruhsty-dev:latest'
     build:
       context: '.'
       dockerfile: 'Dockerfile.dev'
-    command: [ "python", "-m", "bruhsty" ]
+    working_dir: "/project/tests/"
+    entrypoint: [ "poetry" ]
+    command: [ "run", "pytest", "--cov=../src", "--cov-report=html", "." ]
     volumes:
       - .:/project/
       - poetry_venv:/root/.cache/pypoetry/virtualenvs
-
     depends_on:
       - postgres
       - redis
@@ -41,7 +42,6 @@ services:
 networks:
   postgres:
   redis:
-
 
 volumes:
   poetry_venv:

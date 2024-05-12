@@ -1,0 +1,17 @@
+FROM python:3.12
+
+RUN apt-get -y update \
+    && apt-get -y upgrade \
+    && pip install poetry==1.7.0
+
+COPY . /project/
+
+WORKDIR /project/
+
+RUN python -m poetry config virtualenvs.in-project false \
+    && python -m poetry config virtualenvs.create true \
+    && python -m poetry install --no-root
+
+ENV PYTHONPATH=/project/
+
+ENTRYPOINT ["/bin/bash"]
