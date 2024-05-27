@@ -47,6 +47,8 @@ if __name__ == "__main__":
             ".bot",
             "user.bot.handlers",
             "user.service_layer.handlers",
+            "channel.bot.handlers",
+            "channel.service_layer",
         ],
     )
     main()

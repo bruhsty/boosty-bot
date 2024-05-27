@@ -1,3 +1,3 @@
-from .storage import BoostyProfile, BoostyProfileStorage
+from .profile_storage import BoostyProfile, BoostyProfileStorage
 
-__all__ = ["BoostyProfileStorage", "BoostyProfile"]
+__all__ = ["BoostyProfile", "BoostyProfileStorage"]

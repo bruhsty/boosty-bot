@@ -1,4 +1,17 @@
+.git/
+docs/
+dist/
 config/
+.venv/
+.pre-commit-config.yaml
+Dockerfile
+Dockerfile*
+Makefile
+docker-compose*.yaml
+.gitignore
+.dockerignore
+**/__pycache__
+tests/
 
 # Created by https://www.toptal.com/developers/gitignore/api/python,windows,linux,macos,pycharm+all,venv,virtualenv
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,windows,linux,macos,pycharm+all,venv,virtualenv

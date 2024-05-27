@@ -25,6 +25,13 @@ class InvalidCodeError(DomainError):
     pass
 
 
+@dataclass(frozen=True)
+class Channel:
+    id: int
+    invite_link: str
+    level: SubscriptionLevel
+
+
 @dataclass
 class BoostyProfile:
     id: int

@@ -11,3 +11,5 @@ class MenuStatesGroup(StatesGroup):
     invalid_email_value = State()
     invalid_code = State()
     email_successfully_added = State()
+    channels_list = State()
+    channels_list_not_available = State()

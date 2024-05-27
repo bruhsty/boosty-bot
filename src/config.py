@@ -2,10 +2,10 @@ import enum
 import pathlib
 
 import yaml
-from pydantic import Extra
+from pydantic import BaseModel, Extra
 from pydantic_settings import BaseSettings
 
-__all__ = ["Config", "parse_file", "UpdateType", "Env"]
+__all__ = ["Config", "parse_file", "UpdateType", "Env", "Channel"]
 
 
 class Env(str, enum.Enum):
@@ -33,14 +33,22 @@ class PollingConfig(BaseSettings):
     timeout: int = 1
 
 
+class Channel(BaseModel):
+    id: int
+    invite_link: str
+    level_id: int
+
+
 class BotConfig(BaseSettings):
     token: str
     updates: UpdateType
     webhook: WebhookConfig | None
     polling: PollingConfig | None
+    channels: list[Channel]
 
 
 class BoostyConfig(BaseSettings):
+    author: str
     access_token: str
     refresh_token: str
 
@@ -51,6 +59,13 @@ class SmtpConfig(BaseSettings):
     username: str
     password: str
     use_tls: bool = True
+
+
+class RedisConfig(BaseModel):
+    host: str
+    port: int
+    db: int
+    password: str | None = None
 
 
 class DataBaseConfig(BaseSettings):
@@ -68,6 +83,7 @@ class Config(BaseSettings, extra=Extra.allow):
     boosty: BoostyConfig
     smtp: SmtpConfig
     database: DataBaseConfig
+    redis: RedisConfig
 
 
 def parse_file(config_path: str | pathlib.Path) -> Config:

@@ -1,8 +1,11 @@
 import logging
 import sys
+from datetime import timedelta
 
 import httpx
+import redis.asyncio
 from aiogram.fsm.storage.memory import MemoryStorage
+from boosty import BoostyProfileStorage
 from common.adapters.boosty import BoostyAPI
 from common.adapters.email import SMTPEmailService
 from common.service_layer import MessageBus
@@ -74,11 +77,25 @@ class AppContainer(DeclarativeContainer):
         httpx.AsyncClient,
     )
 
+    redis_client = providers.Singleton(
+        redis.asyncio.Redis,
+        host=config.redis.host,
+        port=config.redis.port,
+        db=config.redis.db,
+        password=config.redis.password,
+    )
+
     boosty_client = providers.Singleton(
         BoostyAPI,
         access_token=config.boosty.access_token,
         refresh_token=config.boosty.refresh_token,
         http_client=http_client,
+    )
+
+    boosty_storage = providers.Singleton(
+        BoostyProfileStorage,
+        redis=redis_client,
+        level_lifetime=timedelta(hours=12),
     )
 
     state_storage = providers.Singleton(MemoryStorage)

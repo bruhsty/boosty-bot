@@ -7,10 +7,11 @@ from aiogram_dialog import DialogManager, StartMode
 from aiogram_dialog.widgets.input import ManagedTextInput
 from aiogram_dialog.widgets.kbd import Button
 from app.container import AppContainer
+from boosty import BoostyProfileStorage
 from dependency_injector.wiring import Provide, inject
 
-from ..domain.models import EmailAlreadyAdded, InvalidCodeError
-from ..service_layer import register
+from ..domain.models import Channel, EmailAlreadyAdded, InvalidCodeError
+from ..service_layer import channels, register
 from ..service_layer.unit_of_work import UnitOfWork
 from .state import MenuStatesGroup
 
@@ -26,6 +27,7 @@ __all__ = [
     "get_email_list",
     "on_input_verification_code",
     "switch_window",
+    "list_channels",
 ]
 
 
@@ -34,6 +36,7 @@ async def menu(
     msg: Message,
     dialog_manager: DialogManager,
 ):
+    # await msg.bot.approve_chat_join_request(-1001994271159, 1195647957)
     await dialog_manager.start(MenuStatesGroup.main, mode=StartMode.RESET_STACK)
 
 
@@ -153,6 +156,34 @@ async def on_input_verification_code(
         await manager.switch_to(MenuStatesGroup.main)
     except InvalidCodeError:
         await manager.switch_to(MenuStatesGroup.invalid_code)
+
+
+@inject
+async def list_channels(
+    callback: CallbackQuery,
+    button: Button,
+    manager: DialogManager,
+    all_channels: list[dict] = Provide[AppContainer.config.bot.channels],
+    storage: BoostyProfileStorage = Provide[AppContainer.boosty_storage],
+    uow: UnitOfWork = Provide[AppContainer.unit_of_work],
+) -> None:
+    accessible_channels = await channels.list_channels(
+        callback.from_user.id, all_channels, storage, uow
+    )
+
+    def channel_to_view(channel: Channel) -> dict:
+        return {
+            "id": channel.id,
+            "invite_link": channel.invite_link,
+            "level_name": channel.level.name,
+        }
+
+    manager.dialog_data["channels"] = [channel_to_view(c) for c in accessible_channels]
+
+    if accessible_channels:
+        await manager.switch_to(MenuStatesGroup.channels_list)
+    else:
+        await manager.switch_to(MenuStatesGroup.channels_list_not_available)
 
 
 async def go_back(

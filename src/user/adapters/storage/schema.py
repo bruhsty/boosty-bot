@@ -5,7 +5,7 @@ from datetime import datetime
 
 import sqlalchemy as sa
 from common.orm import Base
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
 
 from user.domain import models
 
@@ -30,7 +30,9 @@ class CreatedAtMixin:
 class User(Base, CreatedAtMixin):
     __tablename__ = "users"
 
-    telegram_id: Mapped[int] = mapped_column(sa.Integer(), primary_key=True)
+    id: Mapped[int] = synonym("telegram_id")
+
+    telegram_id: Mapped[int] = mapped_column(sa.BigInteger(), primary_key=True)
 
     emails: Mapped[list[UserEmail]] = relationship(
         cascade="save-update, merge, delete, delete-orphan",

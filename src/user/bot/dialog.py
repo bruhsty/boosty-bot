@@ -1,10 +1,11 @@
 import re
 
 from aiogram import F
+from aiogram.enums import ParseMode
 from aiogram_dialog import Dialog, Window
 from aiogram_dialog.widgets.input import TextInput
 from aiogram_dialog.widgets.kbd import Button, Column, Row, Select
-from aiogram_dialog.widgets.text import Const, Format
+from aiogram_dialog.widgets.text import Const, Format, List
 
 from .handlers import (
     add_email,
@@ -12,6 +13,7 @@ from .handlers import (
     email_validate,
     get_email_list,
     go_back,
+    list_channels,
     list_emails,
     on_email_selected,
     on_input_verification_code,
@@ -44,14 +46,35 @@ email_input = TextInput(
     on_success=email_validate,
 )
 
+add_email_button = Button(Const("Добавить email"), id="menu.add_email", on_click=add_email)
+
 menu_dialog = Dialog(
     Window(
         Const("Меню: "),
         Row(
-            Button(Const("Добавить email"), id="menu.add_email", on_click=add_email),
+            Button(Const("Мои каналы"), id="menu.list_channels", on_click=list_channels),
+            add_email_button,
             Button(Const("Мои имейлы"), id="menu.list_emails", on_click=list_emails),
         ),
         state=MenuStatesGroup.main,
+    ),
+    Window(
+        Const("Сейчас вам доступны эти каналы:"),
+        List(
+            Format('<a href="{item[invite_link]}">{item[level_name]}</a>'),
+            sep="<br/>",
+            items="channels",
+        ),
+        go_back_button,
+        parse_mode=ParseMode.HTML,
+        state=MenuStatesGroup.channels_list,
+        getter=get_email_list,
+    ),
+    Window(
+        Const("Вы не подтвердили свой email, поэтому вам пока недоступны каналы"),
+        add_email_button,
+        go_back_button,
+        state=MenuStatesGroup.channels_list_not_available,
     ),
     Window(
         Const("Ваши имейлы:"),

@@ -1,19 +1,30 @@
 services:
   bot:
-    image: 'burenotti/bruhsty-dev:latest'
+    image: 'burenotti/bruhsty:latest'
     build:
       context: '.'
-      dockerfile: 'Dockerfile.dev'
-    command: [ "python", "-m", "bruhsty" ]
+      dockerfile: 'Dockerfile'
+    command: ["-m", "app", "--config", "/project/config/config.yaml"]
     volumes:
       - .:/project/
-      - poetry_venv:/root/.cache/pypoetry/virtualenvs
-
     depends_on:
       - postgres
       - redis
     networks:
       - postgres
+      - redis
+
+  profile_updater:
+    image: 'burenotti/bruhsty:latest'
+    build:
+      context: '.'
+      dockerfile: 'Dockerfile'
+    command: ["-m", "boosty.profile_updater", "--config", "/project/config/config.yaml"]
+    volumes:
+      - .:/project/
+    depends_on:
+      - redis
+    networks:
       - redis
 
   postgres:

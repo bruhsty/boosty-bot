@@ -1,20 +1,41 @@
-FROM python:3.11-slim AS builder
+FROM python:3.11-slim AS base
 
-RUN apt-get -y update \
+SHELL ["/bin/bash", "-c"]
+
+ENV PATH="/poetry-venv/bin:${PATH}" \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    POETRY_VIRTUALENVS_IN_PROJECT=1 \
+    POETRY_VIRTUALENVS_OPTIONS_NO_PIP=1 \
+    POETRY_VIRTUALENVS_OPTIONS_NO_SETUPTOOLS=1
+
+WORKDIR /project
+
+RUN --mount=type=cache,target=/poetry-venv \
+    --mount=target=/var/lib/apt/lists,type=cache \
+    --mount=target=/var/cache/apt,type=cache,sharing=locked \
+    apt-get -y update \
     && apt-get -y upgrade \
-    && pip install poetry==1.7.0
+    && python -m venv /poetry-venv \
+    && source /poetry-venv/bin/activate \
+    && pip install poetry
 
-COPY . /src/
+RUN --mount=target=/var/lib/apt/lists,type=cache \
+    --mount=target=/var/cache/apt,type=cache,sharing=locked \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    --mount=type=cache,target=/poetry-venv \
+    poetry lock \
+    && poetry install --only main --no-root
 
-WORKDIR /src/
+FROM gcr.io/distroless/python3-debian12:nonroot as final
 
-RUN python -m poetry config virtualenvs.in-project true \
-    && python -m poetry config virtualenvs.create true \
-    && python -m poetry install --only main
+COPY --from=base \
+    /project/.venv/lib/python3.11/site-packages/ /home/nonroot/.local/lib/python3.11/site-packages/
 
+ENV PYTHONPATH="${PYTHONPATH}:/project/src" \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
 
-FROM gcr.io/distroless/python3-debian12:nonroot
+COPY . /project
 
-COPY --from=builder /src/.venv/lib/python3.11/site-packages/ /usr/lib/python3.11/
-
-CMD ["-m", "bruhsty"]
+CMD ["-m", "app", "--config", "./config/config.yaml"]

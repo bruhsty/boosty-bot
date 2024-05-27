@@ -1,5 +1,6 @@
+import channel
+import user
 from aiogram import Router
-from user.bot import register_dialogs
 
 
 async def on_startup():
@@ -11,7 +12,7 @@ async def on_shutdown():
 
 
 def register_handlers(router: Router):
-    register_dialogs(router)
-
+    user.bot.register_dialogs(router)
+    channel.bot.register_handlers(router)
     router.startup.register(on_startup)
     router.shutdown.register(on_shutdown)
